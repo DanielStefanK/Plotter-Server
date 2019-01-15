@@ -6,21 +6,23 @@ const Plotter = require("./plotter");
 
 const plotter = [];
 
-app.use(bodyParser.json());
+app.use('/api', bodyParser.json());
+
+app.use (express.static(__dirname + '/frontend/dist'))
 
 app.post("/pen", (req, res) => {
   state.pen = req.body.pen;
   res.send({ ok: true, state });
 });
 
-app.post("/addPlotter", (req, res) => {
+app.post("/api/addPlotter", (req, res) => {
   const newPlotter = new Plotter(req.body.ip, req.body.port);
   plotter.push(newPlotter);
 
   res.send({ ok: true, result: { plotter: newPlotter } });
 });
 
-app.post("/moveTo", async (req, res) => {
+app.post("/api/moveTo", async (req, res) => {
   const pltr = plotter.find(pltr => {
     return pltr.id === req.body.id;
   });
@@ -31,7 +33,7 @@ app.post("/moveTo", async (req, res) => {
   pltr.flush().catch(() => res.send({ ok: false }));
 });
 
-app.post("/drawTo", async (req, res) => {
+app.post("/api/drawTo", async (req, res) => {
   const pltr = plotter.find(pltr => {
     return pltr.id === req.body.id;
   });
@@ -42,7 +44,7 @@ app.post("/drawTo", async (req, res) => {
   pltr.flush().catch(() => res.send({ ok: false }));
 });
 
-app.post("/goHome", async (req, res) => {
+app.post("/api/goHome", async (req, res) => {
   const pltr = plotter.find(pltr => {
     return pltr.id === req.body.id;
   });
@@ -53,7 +55,7 @@ app.post("/goHome", async (req, res) => {
   pltr.flush().catch(() => res.send({ ok: false }));
 });
 
-app.post("/setHome", (req, res) => {
+app.post("/api/setHome", (req, res) => {
   const pltr = plotter.find(pltr => {
     return pltr.id === req.body.id;
   });
@@ -65,7 +67,7 @@ app.post("/setHome", (req, res) => {
   res.send({ ok: true, state: pltr.state });
 });
 
-app.post("/status", (req, res) => {
+app.post("/api/status", (req, res) => {
   const pltr = plotter.find(pltr => {
     return pltr.id === req.body.id;
   });
@@ -73,11 +75,11 @@ app.post("/status", (req, res) => {
   res.send({ ok: true, state: pltr.state });
 });
 
-app.post("/plotter", (req, res) => {
+app.post("/api/plotter", (req, res) => {
   res.send({ ok: true, plotter: plotter });
 });
 
-app.post("/connect", (req, res) => {
+app.post("/api/connect", (req, res) => {
   plotter.forEach(pltr => {
     pltr.connect();
   });
