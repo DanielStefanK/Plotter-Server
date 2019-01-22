@@ -1,24 +1,21 @@
 const net = require("net");
-const socket = new net.Socket()
+const socket = new net.Socket();
+
+const socketWrapper = require("./socket");
 
 module.exports = {
-    sendData (data) {
-        let i 
-        const sendData = data.map(item => {
-            return JSON.stringify(item) + '\n')
-        })
+  sendData(data, updatePlotter) {
+    data.forEach(async item => {
+      await socketWrapper.send(JSON.stringify(item) + "\n");
+      updatePlotter(item);
+    });
+  },
 
-        socket.on('ready', () => {
-            socket.write(sendData, ()=>{
-                socket.close()
-            })
-        })
-        
-    },
+  connect(ip) {
+    return socketWrapper.connect();
+  },
 
-    connect (ip, cb) {
-        socket.connect(1337, ip, ()=>{
-            cb()
-        })
-    }
-}
+  disconnect() {
+    return socketWrapper.destroy();
+  }
+};

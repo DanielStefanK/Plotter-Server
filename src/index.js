@@ -1,69 +1,107 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const app = express();
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
+const bodyParser = require("body-parser");
 
 const socketHandler = require("./socketHandler");
 
 const plotter = {
-  ip: '192.168.1.100',
+  ip: "192.168.1.100",
   x: 0,
-  y:0,
+  y: 0,
   pen: false,
-  connection: 'disconnected'
-}
+  connection: "disconnected",
+  printed: []
+};
 
-app.use('/api', bodyParser.json());
+app.use(express.static(__dirname + "/frontend/dist"));
 
-app.use (express.static(__dirname + '/frontend/dist'))
+io.on("connection", socket => {
+  const updatePlotter = item => {
+    plotter.x += item.x;
+    plotter.y += item.y;
+    plotter.pen = item.operation === "drawTo";
+    plotter.printed.push(item);
+    socket.emit("plotterStatus", plotter);
+  };
 
-app.post("/api/connect", (req, res) => {
-  ip = req.body.ip || plotter.ip
+  console.log("a client connected");
+  socket.emit("plotterStatus", plotter);
 
-  plotter.ip = ip
+  socket.on("disconnect", () => {
+    console.log("a client disconnected");
+  });
 
-  socketHandler.connect (ip, ()=>{
-    plotter.connection = 'connected'
-    res.json ({
-      result: plotter,
-      error: null
-    })
-  })
-});
+  socket.on("connectPlotter", ip => {
+    if (plotter.connection !== "disconnected") {
+      socket.emit("errorNetwork", "plotter already connected");
+      return socket.emit("plotterStatus", plotter);
+    }
 
-app.post("/api/state", (req, res) => {
-  res.json ({
-    result: plotter,
-    error: null
-  })
-});
+    console.log("connection to ip: " + ip);
+    plotter.ip = ip;
 
-app.post("/api/sendData", (req, res) => {
-  data = req.body.data
+    socketHandler
+      .connect(ip)
+      .then(() => {
+        console.log("connected to plotter: " + ip);
+        plotter.connection = "connected";
+        return socket.emit("plotterStatus", plotter);
+      })
+      .catch(() => {
+        console.log("connection failed: " + ip);
+        plotter.connection = "disconnected";
+        socket.emit("errorNetwork", "connection failed");
+        return socket.emit("plotterStatus", plotter);
+      });
+  });
 
-  if (plotter.connection != 'connected') {
-    return res.json ({error: 'plotter not connected', result: null})
-  }
+  socket.on("disconnectPlotter", ip => {
+    if (plotter.connection !== "connected") {
+      socket.emit("errorNetwork", "plotter cannot be disconnected");
+      return socket.emit("plotterStatus", plotter);
+    }
 
-  plotter = {...socketHandler.sendData(data, plotter), ...plotter}
+    console.log("disconnecting from: " + plotter.ip);
 
-  res.json({ error: null, result: plotter});
-});
+    socketHandler.disconnect().then(() => {
+      console.log("disconnected from: " + ip);
+      plotter.connection = "disconnected";
+      return socket.emit("plotterStatus", plotter);
+    });
+  });
 
-app.post("/api/goHome", async (req, res) => {
-  if (plotter.connection != 'connected') {
-    return res.json ({error: 'plotter not connected', data: null})
-  }
+  socket.on("sendPrint", printArray => {
+    plotter.connection = "printing";
+    socket.emit("plotterStatus", plotter);
+    socketHandler.sendData(printArray, updatePlotter);
+    plotter.connection = "connected";
+    socket.emit("plotterStatus", plotter);
+  });
 
-  
-});
+  socket.on("goHome", () => {
+    plotter.connection = "printing";
+    socket.emit("plotterStatus", plotter);
+    socketHandler.sendData(
+      [
+        {
+          operation: "moveTo",
+          x: -plotter.x,
+          y: -plotter.y
+        }
+      ],
+      updatePlotter
+    );
+    plotter.connection = "connected";
+    socket.emit("plotterStatus", plotter);
+  });
 
-app.post("/api/setHome", (req, res) => {
-  if (plotter.connection != 'connected') {
-    return res.json ({error: 'plotter not connected', data: null})
-  }
-  plotter.x = 0
-  plotter.y = 0
-  res.json({result: plotter, error : null})
+  socket.on("setHome", () => {
+    plotter.x = 0;
+    plotter.y = 0;
+    socket.emit("plotterStatus", plotter);
+  });
 });
 
 app.use(function(req, res) {
@@ -73,6 +111,6 @@ app.use(function(req, res) {
   });
 });
 
-app.listen(3000, function() {
-  console.log("Example app listening on port 3000!");
+http.listen(3000, function() {
+  console.log("Plotter-Server listening on 3000!");
 });
