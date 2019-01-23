@@ -4,7 +4,7 @@ const socket = new net.Socket();
 process.on("exit", () => socket.destroy());
 
 module.exports = {
-  connect(ip) {
+  connect(ip, onError) {
     return new Promise((resolve, reject) => {
       socket.once("error", () => {
         reject();
@@ -15,6 +15,7 @@ module.exports = {
         ip,
         () => {
           socket.removeAllListeners("error");
+          socket.on("error", onError);
           resolve();
         }
       );

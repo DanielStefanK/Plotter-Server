@@ -4,15 +4,26 @@ const socket = new net.Socket();
 const socketWrapper = require("./socket");
 
 module.exports = {
-  sendData(data, updatePlotter) {
-    data.forEach(async item => {
-      await socketWrapper.send(JSON.stringify(item) + "\n");
+  async sendData(data, updatePlotter, plotter) {
+    let plotterX = plotter.x;
+    let plotterY = plotter.y;
+
+    for (const item of data) {
+      let x = item.x - plotterX;
+      let y = item.y - plotterY;
+      let sendObject = { operation: item.operation, x, y };
+      await socketWrapper.send(JSON.stringify(sendObject) + "\n");
+      plotterX = item.x;
+      plotterY = item.y;
       updatePlotter(item);
-    });
+    }
   },
 
-  connect(ip) {
-    return socketWrapper.connect();
+  connect(ip, errorCb) {
+    return socketWrapper.connect(
+      ip,
+      errorCb
+    );
   },
 
   disconnect() {

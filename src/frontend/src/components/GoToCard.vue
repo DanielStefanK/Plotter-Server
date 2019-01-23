@@ -1,6 +1,6 @@
 <template>
-  <v-card :flat="flat" height="100%">
-    <v-card-title v-if="title" primary-title>
+  <v-card height="100%">
+    <v-card-title primary-title>
       <div>
         <div class="headline">Move Printing Head</div>
       </div>
@@ -8,65 +8,71 @@
     <v-card-text>
       <v-layout wrap row>
         <v-flex xs12>
-          <v-text-field type="number" label="X" v-model="x"/>
+          <v-text-field type="number" :label="`X (max is ${maxX})`" v-model="x"/>
         </v-flex>
         <v-flex xs12>
-          <v-text-field type="number" label="Y" v-model="y"/>
+          <v-text-field type="number" :label="`Y (max is ${maxY})`" v-model="y"/>
         </v-flex>
       </v-layout>
     </v-card-text>
     <v-card-actions>
+      <v-switch v-model="paintState" label="Paint"></v-switch>
       <v-spacer/>
-      <v-btn color="primary" @click="move">Send</v-btn>
+      <v-btn color="primary" @click="move" :loading="plotter.connection == 'printing'">Send</v-btn>
     </v-card-actions>
   </v-card>
 </template>
 
 <script>
-import { mapState, mapActions } from "vuex";
+import constants from "../util/constants.js";
 
 export default {
   props: {
-    title: Boolean,
-    flat: Boolean
+    plotter: Object
   },
   data() {
     return {
       x: 10,
       y: 10,
-      isLoading: false
+      paintState: false
     };
   },
   created() {
-    this.paintState = this.status.pen;
+    this.paintState = this.plotter.pen;
   },
 
   watch: {
-    "state.pen"() {
-      this.paintState = this.status.pen;
+    "plotter.pen"() {
+      this.paintState = this.plotter.pen;
+    }
+  },
+
+  methods: {
+    move() {
+      this.$emit("goTo", this.getSendObject);
     }
   },
 
   computed: {
-    ...mapState(["status"])
-  },
-
-  methods: {
-    ...mapActions(["sendPosition", "sendData"]),
-
-    move() {
-      this.isLoading = true;
-      this.sendPosition({ x: this.x, y: this.y, pen: this.status.pen })
-        .catch(() => {})
-        .finally(() => {
-          this.isLoading = false;
-        });
+    maxX() {
+      return constants.maxX;
+    },
+    maxY() {
+      return constants.maxY;
     },
     getSendObject() {
+      const x =
+        Math.min(Number.parseInt(this.x), this.maxX) < 0
+          ? 0
+          : Math.min(Number.parseInt(this.x), this.maxX);
+      const y =
+        Math.min(Number.parseInt(this.y), this.maxY) < 0
+          ? 0
+          : Math.min(Number.parseInt(this.y), this.maxY);
       return {
-        x: Number.parseInt(this.x),
-        y: Number.parseInt(this.y),
-        pen: this.status.pen
+        x,
+        y,
+        operation: this.paintState ? "drawTo" : "moveTo"
       };
     }
   }

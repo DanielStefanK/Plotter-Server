@@ -19,9 +19,10 @@ app.use(express.static(__dirname + "/frontend/dist"));
 
 io.on("connection", socket => {
   const updatePlotter = item => {
-    plotter.x += item.x;
-    plotter.y += item.y;
+    plotter.x = item.x;
+    plotter.y = item.y;
     plotter.pen = item.operation === "drawTo";
+    plotter.connection = "printing";
     plotter.printed.push(item);
     socket.emit("plotterStatus", plotter);
   };
@@ -34,7 +35,10 @@ io.on("connection", socket => {
   });
 
   socket.on("connectPlotter", ip => {
-    if (plotter.connection !== "disconnected") {
+    if (
+      plotter.connection !== "disconnected" &&
+      plotter.connection !== "error"
+    ) {
       socket.emit("errorNetwork", "plotter already connected");
       return socket.emit("plotterStatus", plotter);
     }
@@ -43,7 +47,14 @@ io.on("connection", socket => {
     plotter.ip = ip;
 
     socketHandler
-      .connect(ip)
+      .connect(
+        ip,
+        () => {
+          console.log("error in connection plotter: " + ip);
+          plotter.connection = "error";
+          socket.emit("plotterStatus", plotter);
+        }
+      )
       .then(() => {
         console.log("connected to plotter: " + ip);
         plotter.connection = "connected";
@@ -72,10 +83,10 @@ io.on("connection", socket => {
     });
   });
 
-  socket.on("sendPrint", printArray => {
+  socket.on("sendPrint", async printArray => {
     plotter.connection = "printing";
     socket.emit("plotterStatus", plotter);
-    socketHandler.sendData(printArray, updatePlotter);
+    await socketHandler.sendData(printArray, updatePlotter, plotter);
     plotter.connection = "connected";
     socket.emit("plotterStatus", plotter);
   });
@@ -91,7 +102,8 @@ io.on("connection", socket => {
           y: -plotter.y
         }
       ],
-      updatePlotter
+      updatePlotter,
+      plotter
     );
     plotter.connection = "connected";
     socket.emit("plotterStatus", plotter);

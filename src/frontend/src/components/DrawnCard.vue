@@ -1,11 +1,28 @@
 <template>
-  <v-card height="500px">
-    <canvas ref="my-canvas"></canvas>
+  <v-card>
+    <v-card-text>
+      <canvas
+        id="canvas"
+        class="elevation-5"
+        ref="my-canvas"
+        :width="maxX"
+        :height="maxY"
+        @mousemove="doDrag"
+        @mousedown="doMouseDown"
+        @mouseup="doMouseUp"
+      ></canvas>
+    </v-card-text>
+    <v-card-actions>
+      <v-spacer/>
+      <v-btn flat @click="reset">Reset</v-btn>
+      <v-btn flat @click="undo">Undo</v-btn>
+      <v-btn color="primary" @click="send">send</v-btn>
+    </v-card-actions>
   </v-card>
 </template>
 
 <script>
-import { mapState } from "vuex";
+import constants from "../util/constants.js";
 
 export default {
   data() {
@@ -14,49 +31,137 @@ export default {
         context: null
       },
       height: 0,
-      width: 0
+      width: 0,
+      lines: [],
+      line: null,
+      mouse: {
+        current: {
+          x: 0,
+          y: 0
+        },
+        previous: {
+          x: 0,
+          y: 0
+        },
+        down: false
+      },
+      canvas: null
     };
   },
 
   computed: {
-    ...mapState(["sendPositions"])
+    maxX() {
+      return constants.maxX;
+    },
+    maxY() {
+      return constants.maxY;
+    }
   },
 
   methods: {
+    undo() {
+      this.lines.splice(this.lines.length - 1, 1);
+      var c = document.getElementById("canvas");
+      var ctx = c.getContext("2d");
+      ctx.clearRect(0, 0, c.width, c.height);
+      this.drawLines(ctx);
+    },
     draw() {
-      let previous = { x: 0, y: this.height, pen: false };
-      this.provider.context.beginPath();
-      this.provider.context.moveTo(previous.x, previous.y);
-      this.sendPositions.forEach(item => {
-        if (item.pen) {
-          this.provider.context.lineTo(item.x, this.height - item.y);
-        } else {
-          this.provider.context.moveTo(item.x, this.height - item.y);
+      // requestAnimationFrame(this.draw);
+      if (this.mouse.down) {
+        var c = document.getElementById("canvas");
+        var ctx = c.getContext("2d");
+        ctx.clearRect(0, 0, c.width, c.height);
+        this.drawLines(ctx);
+        ctx.beginPath();
+        ctx.moveTo(this.mouse.previous.x, this.mouse.previous.y);
+        ctx.lineTo(this.mouse.current.x, this.mouse.current.y);
+        ctx.strokeStyle = "#F63E02";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    },
+
+    send() {
+      let sendObject = [];
+      this.lines.forEach(l => {
+        sendObject.push({
+          operation: "moveTo",
+          x: l.from.x,
+          y: l.from.y
+        });
+        sendObject.push({
+          operation: "drawTo",
+          x: l.to.x,
+          y: l.to.y
+        });
+      });
+      this.$emit("send", sendObject);
+    },
+
+    doDrag(event) {
+      var c = document.getElementById("canvas");
+      this.mouse.current = this.getMousePos(c, event);
+
+      this.draw(event);
+    },
+
+    doMouseDown(event) {
+      var c = document.getElementById("canvas");
+      this.mouse.down = true;
+      this.mouse.previous = this.getMousePos(c, event);
+    },
+    doMouseUp() {
+      this.mouse.down = false;
+      this.lines.push({
+        from: {
+          x: this.mouse.previous.x,
+          y: this.mouse.previous.y
+        },
+        to: {
+          x: this.mouse.current.x,
+          y: this.mouse.current.y
         }
       });
-      this.provider.context.stroke();
+    },
+
+    drawLines(ctx) {
+      this.lines.forEach(l => {
+        ctx.beginPath();
+        ctx.moveTo(l.from.x, l.from.y);
+        ctx.lineTo(l.to.x, l.to.y);
+        ctx.strokeStyle = "#F63E02";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+    },
+
+    reset() {
+      this.lines = [];
+      var c = document.getElementById("canvas");
+      var ctx = c.getContext("2d");
+      ctx.clearRect(0, 0, c.width, c.height);
+    },
+
+    getMousePos(canvas, evt) {
+      var rect = canvas.getBoundingClientRect();
+      return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+      };
     }
   },
 
-  watch: {
-    sendPositions() {
-      this.provider.context.clearRect(0, 0, this.width, this.height);
-      this.draw();
-    }
+  ready: function() {
+    var c = document.getElementById("canvas");
+    var ctx = c.getContext("2d");
+    ctx.translate(0, c.height);
+    ctx.scale(1, -1);
+    ctx.imageSmoothingEnabled = false;
+    // this.draw();
   },
 
-  mounted() {
-    this.provider.context = this.$refs["my-canvas"].getContext("2d");
-    this.$refs["my-canvas"].width = this.$refs[
-      "my-canvas"
-    ].parentElement.clientWidth;
-    this.$refs["my-canvas"].height = this.$refs[
-      "my-canvas"
-    ].parentElement.clientHeight;
-    this.width = this.$refs["my-canvas"].width;
-    this.height = this.$refs["my-canvas"].height;
-    this.draw();
-  }
+  mounted() {}
 };
 </script>
 
