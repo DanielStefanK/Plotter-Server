@@ -16,7 +16,7 @@
       <v-spacer/>
       <v-btn flat @click="reset">Reset</v-btn>
       <v-btn flat @click="undo">Undo</v-btn>
-      <v-btn color="primary" @click="send">send</v-btn>
+      <v-btn color="primary" :loading="loading" @click="send">send</v-btn>
     </v-card-actions>
   </v-card>
 </template>
@@ -25,6 +25,9 @@
 import constants from "../util/constants.js";
 
 export default {
+  props: {
+    loading: Boolean
+  },
   data() {
     return {
       provider: {

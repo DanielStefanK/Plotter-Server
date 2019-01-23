@@ -32,7 +32,7 @@
               <live-position-card :plotter="plotter"/>
             </v-flex>
             <v-flex xs12 md6>
-              <drawing-card @send="sendArray"/>
+              <drawing-card @send="sendArray" :loading="plotter.connection === 'printing'"/>
             </v-flex>
           </template>
           <v-flex xs12></v-flex>
