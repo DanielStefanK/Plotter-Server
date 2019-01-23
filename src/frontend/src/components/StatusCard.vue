@@ -2,7 +2,11 @@
   <v-card height="100%">
     <v-card-title primary-title>
       <div>
-        <div class="headline">Status of the Plotter</div>
+        <div class="headline">Status of the Plotter
+          <v-btn icon @click="setHome">
+            <v-icon>fa-power-off</v-icon>
+          </v-btn>
+        </div>
       </div>
     </v-card-title>
     <v-card-text>
@@ -26,6 +30,12 @@ export default {
       return Object.keys(this.plotter).map(key => {
         return { key: key, value: this.plotter[key] };
       });
+    }
+  },
+
+  methods: {
+    setHome() {
+      this.$emit("setHome");
     }
   }
 };

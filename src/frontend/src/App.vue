@@ -23,7 +23,7 @@
           </v-flex>
           <template v-else>
             <v-flex xs12 md6 lg4>
-              <status-card :plotter="plotter"/>
+              <status-card :plotter="plotter" @setHome="setHome"/>
             </v-flex>
             <v-flex xs12 md6 lg4>
               <go-to-card :plotter="plotter" @goTo="goTo"/>
@@ -145,6 +145,10 @@ export default {
 
     sendArray(arr) {
       this.socket.emit("sendPrint", arr);
+    },
+
+    setHome() {
+      this.socket.emit("setHome");
     }
   }
 };

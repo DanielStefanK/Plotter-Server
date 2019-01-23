@@ -112,6 +112,7 @@ io.on("connection", socket => {
   socket.on("setHome", () => {
     plotter.x = 0;
     plotter.y = 0;
+    plotter.printed = [];
     socket.emit("plotterStatus", plotter);
   });
 });
