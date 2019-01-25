@@ -19,6 +19,12 @@ module.exports = {
     }
   },
 
+  async sendCircle (data, updatePlotter, plotter) {
+    await socketWrapper.send (JSON.stringify (data) + "\n")
+
+    updatePlotter({...data, operation: 'moveTo'})
+  },
+
   connect(ip, errorCb) {
     return socketWrapper.connect(
       ip,
