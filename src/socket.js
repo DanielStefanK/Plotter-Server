@@ -24,6 +24,7 @@ module.exports = {
 
   send(data) {
     return new Promise((resolve, reject) => {
+      console.log ('sending data: ' + data)
       socket.write(data);
       socket.once("data", res => {
         console.log(res.toString("utf-8"));

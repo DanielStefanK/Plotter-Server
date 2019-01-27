@@ -91,6 +91,14 @@ io.on("connection", socket => {
     socket.emit("plotterStatus", plotter);
   });
 
+  socket.on("sendCircle", async sendObject => {
+    plotter.connection = "printing";
+    socket.emit("plotterStatus", plotter);
+    await socketHandler.sendCircle(sendObject, updatePlotter, plotter);
+    plotter.connection = "connected";
+    socket.emit("plotterStatus", plotter);
+  });
+
   socket.on("goHome", () => {
     plotter.connection = "printing";
     socket.emit("plotterStatus", plotter);

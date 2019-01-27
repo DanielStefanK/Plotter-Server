@@ -2,6 +2,7 @@
   <v-app>
     <v-toolbar color="indigo" dark fixed app>
       <v-spacer/>
+      <v-btn @click="drawCircle">circle</v-btn>
       <v-tooltip bottom>
         <v-icon slot="activator" :color="icon.color">fa-{{icon.icon}}</v-icon>
         <span>{{icon.tooltip}}</span>
@@ -149,6 +150,14 @@ export default {
 
     setHome() {
       this.socket.emit("setHome");
+    },
+    drawCircle () {
+      this.socket.emit("sendCircle", {
+        operation: "circle",
+        x: 0,
+        y: 0,
+        r: 25
+      })
     }
   }
 };

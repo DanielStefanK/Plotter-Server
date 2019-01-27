@@ -22,6 +22,7 @@
     </v-card-text>
     <v-card-actions>
       <v-spacer/>
+      <v-switch v-model="oneline"/>
       <v-btn flat @click="reset">Reset</v-btn>
       <v-btn flat @click="undo">Undo</v-btn>
       <v-btn color="primary" :loading="loading" @click="send">send</v-btn>
@@ -38,6 +39,7 @@ export default {
   },
   data() {
     return {
+      oneline: false,
       provider: {
         context: null
       },
