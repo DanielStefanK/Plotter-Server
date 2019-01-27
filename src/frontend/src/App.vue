@@ -55,7 +55,7 @@ import io from "socket.io-client";
 import ConnectCard from "./components/ConnectCard";
 import StatusCard from "./components/StatusCard";
 import GoToCard from "./components/GoToCard";
-import DrawingCard from "./components/DrawnCard";
+import DrawingCard from "./components/DrawingCard";
 import LivePositionCard from "./components/LivePositionCard";
 
 export default {

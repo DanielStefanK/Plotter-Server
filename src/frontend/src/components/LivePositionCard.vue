@@ -51,8 +51,12 @@ export default {
         op => {
           if (op.operation === "moveTo") {
             ctx.moveTo(op.x, op.y);
-          } else {
+          } else if (op.operation === "drawTo") {
             ctx.lineTo(op.x, op.y);
+          } else if (op.operation === "circle") {
+            ctx.moveTo(op.x + op.radius, op.y);
+            ctx.arc(op.x, op.y, op.radius, 0, 2 * Math.PI);
+            ctx.moveTo(op.x, op.y);
           }
         }
       );

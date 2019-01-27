@@ -8,9 +8,17 @@
         :width="maxX"
         :height="maxY"
         @mousemove="doDrag"
+        @touchmove.native="doDrag"
+        @touchstart.native="doMouseDown"
         @mousedown="doMouseDown"
         @mouseup="doMouseUp"
+        @touchend.native="doMouseUp"
       ></canvas>
+      <v-radio-group v-model="mode">
+        <v-radio label="One Liner" value="oLine"></v-radio>
+        <v-radio label="Continues Line" value="cLine"></v-radio>
+        <v-radio label="Circle" value="circle"></v-radio>
+      </v-radio-group>
     </v-card-text>
     <v-card-actions>
       <v-spacer/>
@@ -33,9 +41,13 @@ export default {
       provider: {
         context: null
       },
+      mode: "oLine",
       height: 0,
       width: 0,
-      lines: [],
+      dawingObjects: [],
+      currenctObject: {
+        type: null
+      },
       line: null,
       mouse: {
         current: {
@@ -69,16 +81,23 @@ export default {
       ctx.clearRect(0, 0, c.width, c.height);
       this.drawLines(ctx);
     },
-    draw() {
-      // requestAnimationFrame(this.draw);
-      if (this.mouse.down) {
-        var c = document.getElementById("canvas");
-        var ctx = c.getContext("2d");
-        ctx.clearRect(0, 0, c.width, c.height);
-        this.drawLines(ctx);
+    drawAllObjects() {},
+
+    drawOLine() {
+      var c = document.getElementById("canvas");
+      var ctx = c.getContext("2d");
+      ctx.clearRect(0, 0, c.width, c.height);
+      this.drawAllObjects();
+      if (this.currenctObject.mouse.previous) {
         ctx.beginPath();
-        ctx.moveTo(this.mouse.previous.x, this.mouse.previous.y);
-        ctx.lineTo(this.mouse.current.x, this.mouse.current.y);
+        ctx.moveTo(
+          this.currenctObject.mouse.previous.x,
+          this.currenctObject.mouse.previous.y
+        );
+        ctx.lineTo(
+          this.currenctObject.mouse.current.x,
+          this.currenctObject.mouse.current.y
+        );
         ctx.strokeStyle = "#F63E02";
         ctx.lineWidth = 2;
         ctx.stroke();
@@ -103,27 +122,68 @@ export default {
     },
 
     doDrag(event) {
-      var c = document.getElementById("canvas");
-      this.mouse.current = this.getMousePos(c, event);
+      switch (this.mode) {
+        case "oLine":
+          this.doDragOLine(event);
+          break;
+        case "cLine":
+          this.doDragCLine(event);
+          break;
+        case "circle":
+          this.doDragCircle(event);
+      }
+    },
 
-      this.draw(event);
+    doDragOLine(event) {
+      var c = document.getElementById("canvas");
+      this.currentObject.mouse.current = this.getMousePos(c, event);
+
+      this.drawOLine(event);
     },
 
     doMouseDown(event) {
-      var c = document.getElementById("canvas");
-      this.mouse.down = true;
-      this.mouse.previous = this.getMousePos(c, event);
+      switch (this.mode) {
+        case "oLine":
+          this.doMouseDownOLine(event);
+          break;
+        case "cLine":
+          this.doMouseDownCLine(event);
+          break;
+        case "circle":
+          this.doMouseDownCircle(event);
+      }
     },
-    doMouseUp() {
+
+    doMouseDownOLine(event) {
+      var c = document.getElementById("canvas");
+      this.currentObject.type = "oLine";
+      this.currentObject.mouse.previous = this.getMousePos(c, event);
+    },
+
+    doMouseUp(event) {
+      switch (this.mode) {
+        case "oLine":
+          this.doMouseUpOLine(event);
+          break;
+        case "cLine":
+          this.doMouseUpCLine(event);
+          break;
+        case "circle":
+          this.doMouseUpCircle(event);
+      }
+    },
+
+    doMouseUpOLine() {
       this.mouse.down = false;
       this.lines.push({
+        type: "oLine",
         from: {
-          x: this.mouse.previous.x,
-          y: this.mouse.previous.y
+          x: this.currentObject.mouse.previous.x,
+          y: this.currentObject.mouse.previous.y
         },
         to: {
-          x: this.mouse.current.x,
-          y: this.mouse.current.y
+          x: this.currentObject.mouse.current.x,
+          y: this.currentObject.mouse.current.y
         }
       });
     },

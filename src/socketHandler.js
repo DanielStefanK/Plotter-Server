@@ -11,7 +11,12 @@ module.exports = {
     for (const item of data) {
       let x = item.x - plotterX;
       let y = item.y - plotterY;
-      let sendObject = { operation: item.operation, x, y };
+      let sendObject = {
+        operation: item.operation,
+        x,
+        y,
+        ...(item.radius ? { radius: item.radius } : {})
+      };
       await socketWrapper.send(JSON.stringify(sendObject) + "\n");
       plotterX = item.x;
       plotterY = item.y;
